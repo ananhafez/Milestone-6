@@ -1,0 +1,67 @@
+---
+title: "Milestone 6"
+author: "Anan Hafez"
+date: "10/29/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(janitor)
+library(tidyr)
+library(stringr)
+library(httr)
+library(RCurl)
+library(lubridate)
+library(readxl)
+library(gt)
+library(reshape2)
+library(ggplot2)
+library(purrr)
+library(moderndive)
+library(fs)
+library(infer)
+library(googlesheets4)
+library(scales)
+library(TeachBayes)
+library(sf)
+library(shiny)
+library(hexbin)
+library(dplyr)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+sheets_deauth()
+```
+
+```{r}
+dirty_nba_stats <- read.csv("nba_stats_clean.csv")
+
+nba_stats <- dirty_nba_stats %>% clean_names()
+```
+
+```{r}
+player_career_stats <- read.csv("players.csv")
+
+dirty_player_salaries <- read.csv("salaries_1985to2018.csv")
+
+player_salaries <- player_career_stats %>% left_join(dirty_player_salaries, by = c("X_id" = "player_id")) %>% select(name, season_start, salary, team)
+```
+
+```{r}
+full_stats <- nba_stats %>% left_join(player_salaries, by = c("Player" = "name", "Season" = "season_start")) 
+```
+
+About: I've loved the game of basketball since I was a young kid. Growing up in Los Angeles, I loved going to Lakers games with my dad, watching them win two championships in a row, and buying as many Kobe Bryant jerseys as my parents would let me. I even played in a YMCA basketball league and my team won the championship! (Would you believe that?) Over the years though, I've seen a massive shift the way basketball is played. Every kid now wants to be like Steph Curry, shooting from super far away and repeatedly making it. In recent years, teams are allegedly taking many more 3-point shots than when I was a kid and point totals are rising becuase of it. Games that used end with with 80 or 90 points now regularly end with over 100, 110, and sometimes 120 points. I wanted to test this theory with R. Are players really taking more 3-point shots than ever before, or are they just playing faster? Hopefully, with many visualizations and (finally) clean code, I can see how and why professional basketball has changed in the past few decades. 
+
+
+```{r}
+nba_stats %>% group_by(season) %>% summarize(total_shots = sum(fga), total_3p = sum(x3pa)) %>% mutate(prop_3p = round((total_3p/total_shots), digits = 2)) %>% ggplot(aes(x = season, y = prop_3p)) + geom_line() + labs(title = "How the 3-Point Shot grew in the NBA", x = "NBA Season", y = "Proportion of All Shots that were 3-Pointers") + scale_x_continuous(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020))
+```
+
+```{r}
+points_over_time <- nba_stats %>% group_by(season) %>% summarize(total_2points = sum(x2p * 2), total_3points = sum(x3p * 3), total_ft = sum(ft), total_points = (total_2points + total_3points + total_ft), prop_2points = total_2points/total_points, prop_3points = total_3points/total_points, prop_ft = total_ft/total_points) 
+
+ggplot(points_over_time, aes(season)) + geom_line(aes(y = prop_2points, color = "var0")) + geom_line(aes(y = prop_3points, colour = "var1")) + geom_line(aes(y = prop_ft, colour = "var2")) + ylim(0,1) + scale_colour_manual(labels = c("2 Pointer", "3 Pointer", "Free Throw"), values = c("blue", "red", "green")) + scale_x_continuous(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020)) + labs(title = "Sources of NBA Points Over Time", y = "Percentage of Total Points", x = "NBA Season") + theme(legend.title = element_blank())
+```
+
