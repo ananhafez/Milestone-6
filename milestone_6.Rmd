@@ -65,3 +65,14 @@ points_over_time <- nba_stats %>% group_by(season) %>% summarize(total_2points =
 ggplot(points_over_time, aes(season)) + geom_line(aes(y = prop_2points, color = "var0")) + geom_line(aes(y = prop_3points, colour = "var1")) + geom_line(aes(y = prop_ft, colour = "var2")) + ylim(0,1) + scale_colour_manual(labels = c("2 Pointer", "3 Pointer", "Free Throw"), values = c("blue", "red", "green")) + scale_x_continuous(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020)) + labs(title = "Sources of NBA Points Over Time", y = "Percentage of Total Points", x = "NBA Season") + theme(legend.title = element_blank())
 ```
 
+```{r}
+proportion <- function(x){
+  nba_stats %>% 
+    group_by(season) %>% 
+    summarise(total_2points = sum(x2p * 2), total_3points = sum(x3p * 3), total_ft = sum(ft)) %>% 
+    pivot_longer(-season, names_to = "source", values_to = "count") %>% 
+    filter(season == x) %>% 
+    ggplot(aes(source, count)) + geom_bar(stat="identity", width = 0.5, fill="tomato2")
+  }
+```
+
